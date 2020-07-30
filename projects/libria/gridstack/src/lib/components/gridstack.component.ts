@@ -19,6 +19,7 @@ import {
 
 declare var _: any;
 let _sequence = 0;
+declare var GridStack: any;
 
 import { GridstackItemComponent } from './gridstack-item.component';
 import { Item } from './models/item';
@@ -57,9 +58,9 @@ export class GridstackComponent implements OnInit, OnDestroy, AfterViewInit, OnC
     private _ngUnsubscribe = new Subject();
 
     constructor(private _zone: NgZone,
-                private _el: ElementRef,
-                private _renderer: Renderer2,
-                private _gridstackService: GridstackService) { }
+        private _el: ElementRef,
+        private _renderer: Renderer2,
+        private _gridstackService: GridstackService) { }
 
     public ngOnInit(): void {
         if (this.options && this.options.acceptWidgets != null) {
@@ -73,7 +74,7 @@ export class GridstackComponent implements OnInit, OnDestroy, AfterViewInit, OnC
                 this._renderer.setAttribute(this._el.nativeElement, 'data-gs-animate', 'true');
             }
 
-            this._setAttributeIfNotUndefined('data-gs-width', this.width);
+            this._setAttributeIfNotUndefined('data-gs-column', this.width);
             this._setAttributeIfNotUndefined('data-gs-height', this.height);
 
             const width = this.width || (this.options || {}).width;
@@ -82,16 +83,17 @@ export class GridstackComponent implements OnInit, OnDestroy, AfterViewInit, OnC
                 this._renderer.addClass(this._el.nativeElement, `grid-stack-${width}`);
             }
 
-            const el = ($(this._el.nativeElement) as any).gridstack(this.options);
+            this._gridstack = GridStack.init(this.options, this._el.nativeElement);
+
+            const el = $(this._el.nativeElement);
             $(el).data('generated-id', this.generatedId);
-            this._gridstack = $(el).data('gridstack');
 
             this._gridstackService.addGrid(this);
 
             // Hook events
-            $(this._el.nativeElement).on('added', (evt: any, items: Item[]) => {
+            this._gridstack.on('added', (evt: any, items: Item[]) => {
                 const itemsOfCurrentGrid = this._gridstackService.getGridItems(this.generatedId);
-                const existingItemIds: string[] = (this._gridstack as any).grid.nodes.map(i => $(i.el)
+                const existingItemIds: string[] = (this._gridstack as any).engine.nodes.map(i => $(i.el)
                     .attr('class')
                     .split(/\s+/)
                     .find(s => s.startsWith('lb-generated-id-'))
@@ -103,29 +105,29 @@ export class GridstackComponent implements OnInit, OnDestroy, AfterViewInit, OnC
                 this.added.emit(items);
             });
 
-            $(this._el.nativeElement).on('change', (evt: any, items: Item[]) => {
+            this._gridstack.on('change', (evt: any, items: Item[]) => {
                 this.change.emit(items);
             });
 
-            $(this._el.nativeElement).on('dragstart', (evt: any, ui: any) => {
-              this.dragstart.emit(evt);
+            this._gridstack.on('dragstart', (evt: any, ui: any) => {
+                this.dragstart.emit(evt);
             });
 
-            $(this._el.nativeElement).on('dragstop', (evt: any, ui: any) => {
-              this.dragstop.emit(evt);
+            this._gridstack.on('dragstop', (evt: any, ui: any) => {
+                this.dragstop.emit(evt);
             });
 
-            $(this._el.nativeElement).on('resizestart', (evt: any, ui: any) => {
-              this.resizestart.emit(evt);
+            this._gridstack.on('resizestart', (evt: any, ui: any) => {
+                this.resizestart.emit(evt);
             });
 
-            $(this._el.nativeElement).on('gsresizestop', (evt: any, ui: any) => {
-              this.gsresizestop.emit(evt);
+            this._gridstack.on('gsresizestop', (evt: any, ui: any) => {
+                this.gsresizestop.emit(evt);
             });
 
-            $(this._el.nativeElement).on('removed', (evt: any, items: Item[]) => {
+            this._gridstack.on('removed', (evt: any, items: Item[]) => {
                 const itemsOfCurrentGrid = this._gridstackService.getGridItems(this.generatedId);
-                const existingItemIds: string[] = (this._gridstack as any).grid.nodes.map(i => $(i.el)
+                const existingItemIds: string[] = (this._gridstack as any).engine.nodes.map(i => $(i.el)
                     .attr('class')
                     .split(/\s+/)
                     .find(s => s.startsWith('lb-generated-id-'))
